@@ -40,10 +40,7 @@ Route::group(['middleware' => ['jwt.auth']], function () {
     // Endpoint untuk kategori produk
     Route::get('list-categories', [CategoryController::class, 'index']);
 
-    // Endpoint untuk laporan
-    Route::get('/reports/summary', [ReportController::class, 'summary']);
-    Route::get('/reports/product-sales', [ReportController::class, 'productSales']);
-    Route::get('/reports/close-cashier', [ReportController::class, 'closeCashier']);
+   
 
     // Endpoint untuk loyalty
     Route::apiResource('loyalty', LoyaltyController::class);

@@ -180,26 +180,26 @@ class LoyaltyController extends Controller
     {
         Log::info("Checking loyalty level upgrade for user_id: {$loyalty->user_id}");
 
-        if ($loyalty->total_spent >= 5000000 && $loyalty->level == 4) {
+        if ($loyalty->total_spent >= 100000 && $loyalty->level == 1) {
             Log::info("Upgrading to Level 5");
-            $loyalty->level = 5;
-            $loyalty->discount = 30;
-            $loyalty->discount_code = $this->generateDiscountCode();
-        } elseif ($loyalty->total_spent >= 2500000 && $loyalty->level == 3) {
-            $loyalty->level = 4;
-            $loyalty->discount = 25;
-            $loyalty->discount_code = $this->generateDiscountCode();
-        } elseif ($loyalty->total_spent >= 1000000 && $loyalty->level == 2) {
-            $loyalty->level = 3;
-            $loyalty->discount = 20;
+            $loyalty->level = 1;
+            $loyalty->discount = 10;
             $loyalty->discount_code = $this->generateDiscountCode();
         } elseif ($loyalty->total_spent >= 500000 && $loyalty->level == 1) {
             $loyalty->level = 2;
             $loyalty->discount = 15;
             $loyalty->discount_code = $this->generateDiscountCode();
-        } elseif ($loyalty->total_spent >= 100000 && $loyalty->level == 0) {
-            $loyalty->level = 1;
-            $loyalty->discount = 10;
+        } elseif ($loyalty->total_spent >= 1000000 && $loyalty->level == 2) {
+            $loyalty->level = 3;
+            $loyalty->discount = 20;
+            $loyalty->discount_code = $this->generateDiscountCode();
+        } elseif ($loyalty->total_spent >= 2500000 && $loyalty->level == 3) {
+            $loyalty->level = 4;
+            $loyalty->discount = 25;
+            $loyalty->discount_code = $this->generateDiscountCode();
+        } elseif ($loyalty->total_spent >= 5000000 && $loyalty->level == 4) {
+            $loyalty->level = 5;
+            $loyalty->discount = 30;
             $loyalty->discount_code = $this->generateDiscountCode();
         }
 
