@@ -31,7 +31,7 @@ class Loyalty extends Model
     public static function calculateLevel($totalSpent)
     {
         if ($totalSpent >= 100000) { // Level 5
-            return ['level' => 1, 'discount' => 10]; // Diskon 30% untuk level 5
+            return ['level' => 1, 'discount' => 0]; // Diskon 30% untuk level 5
         } elseif ($totalSpent >= 500000) { // Level 4
             return ['level' => 2, 'discount' => 15]; // Diskon 25% untuk level 4
         } elseif ($totalSpent >= 1000000) { // Level 3

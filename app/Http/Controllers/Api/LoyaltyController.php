@@ -56,36 +56,36 @@ class LoyaltyController extends Controller
             'discount_code' => 'required|string',
             'user_id' => 'required|exists:users,id',
         ]);
-    
+
         // Ambil loyalty berdasarkan user_id
         $loyalty = Loyalty::where('user_id', $request->user_id)->first();
-    
+
         // Jika loyalty ditemukan, update discount_code
         if ($loyalty) {
             $loyalty->discount_code = $request->discount_code;
             $loyalty->save(); // Simpan perubahan
             return response()->json(['message' => 'Discount code saved successfully'], 200);
         }
-    
+
         return response()->json(['message' => 'Loyalty not found'], 404);
     }
-    
+
 
     public function show(Request $request)
     {
         // Ambil data pengguna berdasarkan token JWT
         $user = $request->user();
-    
+
         if (!$user) {
             return response()->json([
                 'success' => false,
                 'message' => 'User not authenticated.'
             ], 401);
         }
-    
+
         // Ambil data loyalty berdasarkan user_id
         $loyalty = Loyalty::where('user_id', $user->id)->first();
-    
+
         if (!$loyalty) {
             // Jika tidak ada data loyalty, buatkan default data loyalty baru
             $loyalty = new Loyalty([
@@ -97,10 +97,10 @@ class LoyaltyController extends Controller
             ]);
             $loyalty->save();
         }
-    
+
         // Periksa apakah level loyalitas perlu di-update
         $this->checkLevelUpgradeAndAssignDiscount($loyalty);
-    
+
         // Validasi kode diskon jika ada di request
         $discountCode = $request->input('discount_code');
         if ($discountCode) {
@@ -111,14 +111,14 @@ class LoyaltyController extends Controller
                     ->where('user_id', $user->id)
                     ->where('is_used', true) // Memastikan kode diskon sudah digunakan sebelumnya
                     ->exists();
-    
+
                 if ($orderExists) {
                     return response()->json([
                         'success' => false,
                         'message' => 'Kode diskon telah digunakan sebelumnya.'
                     ], 400);
                 }
-    
+
                 // Jika kode diskon valid dan belum digunakan, kembalikan diskon
                 return response()->json([
                     'success' => true,
@@ -133,13 +133,13 @@ class LoyaltyController extends Controller
                 ], 400);
             }
         }
-    
+
         return response()->json([
             'success' => true,
             'data' => $loyalty
         ]);
     }
-    
+
 
     public function upgradeLevelAndAssignDiscount(Request $request)
     {
@@ -179,33 +179,61 @@ class LoyaltyController extends Controller
     private function checkLevelUpgradeAndAssignDiscount($loyalty)
     {
         Log::info("Checking loyalty level upgrade for user_id: {$loyalty->user_id}");
-
-        if ($loyalty->total_spent >= 100000 && $loyalty->level == 1) {
-            Log::info("Upgrading to Level 5");
-            $loyalty->level = 1;
-            $loyalty->discount = 10;
-            $loyalty->discount_code = $this->generateDiscountCode();
-        } elseif ($loyalty->total_spent >= 500000 && $loyalty->level == 1) {
-            $loyalty->level = 2;
-            $loyalty->discount = 15;
-            $loyalty->discount_code = $this->generateDiscountCode();
-        } elseif ($loyalty->total_spent >= 1000000 && $loyalty->level == 2) {
-            $loyalty->level = 3;
-            $loyalty->discount = 20;
-            $loyalty->discount_code = $this->generateDiscountCode();
-        } elseif ($loyalty->total_spent >= 2500000 && $loyalty->level == 3) {
-            $loyalty->level = 4;
-            $loyalty->discount = 25;
-            $loyalty->discount_code = $this->generateDiscountCode();
-        } elseif ($loyalty->total_spent >= 5000000 && $loyalty->level == 4) {
-            $loyalty->level = 5;
-            $loyalty->discount = 30;
-            $loyalty->discount_code = $this->generateDiscountCode();
+    
+        // Simpan level sebelumnya untuk dibandingkan
+        $previousLevel = $loyalty->level;
+        $previousDiscountCode = $loyalty->discount_code;  // Simpan kode diskon sebelumnya
+        
+        // Cek level berdasarkan total_spent, tidak selalu mulai dari level 2
+        if ($loyalty->total_spent >= 5000000) {
+            if ($loyalty->level < 5) {
+                Log::info("Upgrading to Level 5");
+                $loyalty->level = 5;
+                $loyalty->discount = 30;
+            }
+        } elseif ($loyalty->total_spent >= 2500000) {
+            if ($loyalty->level < 4) {
+                Log::info("Upgrading to Level 4");
+                $loyalty->level = 4;
+                $loyalty->discount = 25;
+            }
+        } elseif ($loyalty->total_spent >= 1000000) {
+            if ($loyalty->level < 3) {
+                Log::info("Upgrading to Level 3");
+                $loyalty->level = 3;
+                $loyalty->discount = 20;
+            }
+        } elseif ($loyalty->total_spent >= 500000) {
+            if ($loyalty->level < 2) {
+                Log::info("Upgrading to Level 2");
+                $loyalty->level = 2;
+                $loyalty->discount = 15;
+            }
+        } elseif ($loyalty->total_spent >= 100000) {
+            if ($loyalty->level < 1) {
+                Log::info("Upgrading to Level 1");
+                $loyalty->level = 1;
+                $loyalty->discount = 0;
+            }
         }
-
+    
+        // Cek jika level naik
+        if ($loyalty->level > $previousLevel) {
+            // Jika levelnya 0, langsung generate kode diskon baru jika kode diskon kosong atau null
+            if ($loyalty->level == 0 || !$loyalty->discount_code) {
+                $loyalty->discount_code = $this->generateDiscountCode();
+                Log::info("Generated new discount code: {$loyalty->discount_code}");
+            }
+            // Jika level naik dan kode diskon sebelumnya berbeda, generate kode diskon baru
+            elseif ($loyalty->discount_code !== $previousDiscountCode) {
+                $loyalty->discount_code = $this->generateDiscountCode();
+                Log::info("Generated new discount code: {$loyalty->discount_code}");
+            }
+        }
+    
+        // Simpan perubahan
         $loyalty->save();
     }
-
     // Fungsi untuk menghasilkan kode diskon
     private function generateDiscountCode()
     {
